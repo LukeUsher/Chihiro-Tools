@@ -8,7 +8,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifndef WIN32
 #include <sys/mman.h>
+#endif
 
 const unsigned int bytesPerSector = 512;
 const unsigned int rootDirectoryEntryCount = 256;
@@ -93,9 +96,11 @@ void extractFile(bool fat16, fatEntry_t* fatEntries, void* clusterBase, size_t c
 void extractDirectory(bool fat16, fatEntry_t* fatEntries, void* clusterBase, size_t clusterSize, unsigned int cluster, char* path, unsigned int entryCount) {
 
   // Create the directory  
-
+#ifdef WIN32
+  mkdir(path);
+#else
   mkdir(path, S_IRWXU | S_IRWXG | S_IRWXO);
-
+#endif
   // Start to fill it
 
   uint8_t* clusterData = (uint8_t*)clusterBase;
@@ -250,7 +255,7 @@ int main(int argc, char* argv[]) {
 
   // Load the source file
 
-/*
+#ifdef WIN32
   {
     FILE* bin = fopen(source,"rb");
     fseek(bin,0,SEEK_END);  
@@ -261,11 +266,11 @@ int main(int argc, char* argv[]) {
     fclose(bin);  
     printf("Read %i bytes from file!\n",(int)length);
   }
-*/
+#else
   int file = open(source, O_RDONLY);
   length = lseek(file, 0, SEEK_END); 
   buffer = mmap(NULL, length, PROT_READ, MAP_PRIVATE, file, 0);
-
+#endif
   fatx_t* fatx = (fatx_t*)buffer;  
 
   unsigned int partitionSize = length;
